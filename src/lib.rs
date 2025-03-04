@@ -1,80 +1,63 @@
+// We make sure this pallet uses `no_std` for compiling to Wasm.
+#![cfg_attr(not(feature = "std"), no_std)]
+
+// Re-export pallet items so that they can be accessed from the crate namespace.
 pub use pallet::*;
 
+// FRAME pallets require their own "mock runtimes" to be able to run unit tests. This module
+// contains a mock runtime specific for testing this pallet's functionality.
+#[cfg(test)]
+mod mock;
+
+// This module contains the unit tests for this pallet.
+#[cfg(test)]
+mod tests;
+
+// All pallet logic is defined in its own module and must be annotated by the `pallet` attribute.
 #[frame_support::pallet]
 pub mod pallet {
+    // Import various useful types required by all FRAME pallets.
+    use super::*;
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
 
+    // The `Pallet` struct serves as a placeholder to implement traits, methods and dispatchables
+    // (`Call`s) in this pallet.
     #[pallet::pallet]
     pub struct Pallet<T>(_);
 
+    /// The pallet's configuration trait.
     #[pallet::config]
     pub trait Config: frame_system::Config {
         /// The overarching runtime event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-        /// A type representing the weights required by the dispatchables of this pallet.
-        type WeightInfo;
     }
 
+    /// A storage item for this pallet.
+    #[pallet::storage]
+    pub type SomeItem<T> = StorageValue<_, u32>;
+
+    /// A storage map for this pallet.
+    #[pallet::storage]
+    pub type SomeMap<T> = StorageMap<_, Blake2_128Concat, u32, u32>;
+
+    /// Events that functions in this pallet can emit.
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
-    pub enum Event<T: Config> {
-        /// A user has successfully set a new value.
-        SomethingStored {
-            /// The new value set.
-            something: u32,
-            /// The account who set the new value.
-            who: T::AccountId,
-        },
-    }
+    pub enum Event<T: Config> {/* Pallet Event Variants Go Here */}
 
+    /// Errors that can be returned by this pallet.
     #[pallet::error]
-    pub enum Error<T> {
-        /// The value retrieved was `None` as no value was previously set.
-        NoneValue,
-        /// There was an attempt to increment the value in storage over `u32::MAX`.
-        StorageOverflow,
-    }
+    pub enum Error<T> {/* Pallet Error Variants Go Here */}
 
-    #[pallet::storage]
-    pub type Something<T> = StorageValue<_, u32>;
-
+    /// The pallet's dispatchable functions ([`Call`]s).
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        #[pallet::call_index(0)]
-        #[pallet::weight(Weight::default())]
-        pub fn do_something(origin: OriginFor<T>, something: u32) -> DispatchResult {
-            // Check that the extrinsic was signed and get the signer.
-            let who = ensure_signed(origin)?;
+        /* User Callable Functions Go Here */
+    }
 
-            // Update storage.
-            Something::<T>::put(something);
-
-            // Emit an event.
-            Self::deposit_event(Event::SomethingStored { something, who });
-
-            // Return a successful `DispatchResult`
-            Ok(())
-        }
-
-        #[pallet::call_index(1)]
-        #[pallet::weight(Weight::default())]
-        pub fn cause_error(origin: OriginFor<T>) -> DispatchResult {
-            let _who = ensure_signed(origin)?;
-
-            // Read a value from storage.
-            match Something::<T>::get() {
-                // Return an error if the value has not been set.
-                None => Err(Error::<T>::NoneValue.into()),
-                Some(old) => {
-                    // Increment the value read from storage. This will cause an error in the event
-                    // of overflow.
-                    let new = old.checked_add(1).ok_or(Error::<T>::StorageOverflow)?;
-                    // Update the value in storage with the incremented result.
-                    Something::<T>::put(new);
-                    Ok(())
-                }
-            }
-        }
+    /// The pallet's internal functions.
+    impl<T: Config> Pallet<T> {
+        /* Internally Callable Functions Go Here */
     }
 }
